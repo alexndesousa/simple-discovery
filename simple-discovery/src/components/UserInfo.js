@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
-const UserInfo = ({ header }) => {
-    const[userData, setUserData] = useState([])
+const UserInfo = ({ header, userData, setUserData, setUserPlaylists }) => {
+    //const[userData, setUserData] = useState([])
 
     const endpoint = "https://api.spotify.com/v1/me"
-
 
     //this correctly fetches the authenticated users information
     useEffect(() => {
@@ -14,8 +13,29 @@ const UserInfo = ({ header }) => {
                 .get(endpoint, {headers : header})
                 .then(response => {
                     console.log("response from get request", response.data)
-                    setUserData(response.data)
-                }).catch(error => {
+                    const formattedData = {
+                            "username":response.data.display_name,
+                            "id":response.data.id,
+                            "email": response.data.email
+                    }
+                    setUserData(formattedData)
+                    axios
+                        .get(endpoint+"/playlists?limit=50", {headers : header})
+                        .then(response => {
+                            console.log('response from playlists', response.data)
+                            const formattedData = response.data.items.map(info => {
+                                let formatted = {
+                                    "name":info.name,
+                                    "id":info.id,
+                                    "image":info.images[0].url
+                                }
+                                return formatted
+                            })
+                            setUserPlaylists(formattedData)
+                            console.log("formatted data", formattedData)
+                        })
+                })
+                .catch(error => {
                     console.log(error)
                 })
         }
@@ -23,9 +43,7 @@ const UserInfo = ({ header }) => {
 
     return (
         <div>
-            heya from the userinfo
-            <h1>{userData.display_name}</h1>
-            <h1>{userData.email}</h1>
+            your profile information:
         </div>
     )
 }
