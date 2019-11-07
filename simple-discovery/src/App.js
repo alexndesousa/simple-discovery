@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import UserInfo from './components/UserInfo'
 import ArtistSearch from './components/ArtistSearch'
 import SongSearch from './components/SongSearch'
+import axios from 'axios'
 
 //hash parameters will get the parameters in the url 
 //need to figureo ut how to get them after a redirect
@@ -14,6 +15,9 @@ const App = () => {
     const[songs, setSongs] = useState([])
     const[userData, setUserData] = useState([])
     const[userPlaylists, setUserPlaylists] = useState([])
+
+    const[createdPlaylistId, setCreatedPlaylistId] = useState("")
+    const[allRelatedSongs, setAllRelatedSongs] = useState([])
     
     const[header, setHeader] = useState(null)
     const[state, setState] = useState("")
@@ -134,22 +138,150 @@ const App = () => {
             {listOfPlaylists}
         </div>
 
+    //move this whole thing into its own component then wrap the axios call in an effect hook
+    const getRelatedArtists = (id) => {
+        const endpoint = "https://api.spotify.com/v1/artists/"+id+"/related-artists"
+            //gets the related artists
+            axios
+                .get(endpoint, {headers : header})
+                .then(response => {
+                    let relatedArtists = response.data.artists.map(info => info.id)
+                    return relatedArtists
+                })
+                .then(relatedArtists => {
+                    let songs = []
+                    let allSongs = []
+                    const promises = relatedArtists.map(artist => {
+                        return axios
+                                .get("https://api.spotify.com/v1/artists/"+artist+"/top-tracks?country=GB", {headers:header})
+                                .then(response => {
+                                    const songURIs = response.data.tracks.map(info => info.uri)
+                                    if(songs.length + songURIs.length <= 100) {
+                                        songs = songs.concat(songURIs)
+                                    } else {
+                                        allSongs.push(songs)
+                                        songs = [].concat(songURIs)
+                                    }
+                                })
+                    })
+                    Promise.all(promises)
+                    .then(() => {
+                        allSongs.push(songs)
+                        setAllRelatedSongs(allSongs)
+                    })
+                    .then(() => {
+                        console.log('checking if it made it into the next then ', songs)
+                        //here we create the playlist
+                        const endpoint = "https://api.spotify.com/v1/users/"+"alex31734"+"/playlists"
+
+                        //const tempHeader = header["Content-Type"] = "application/json"
+                        const tempHeader = header
+                        tempHeader["Content-Type"] = "application/json"
+
+                        
+                        console.log('tempHeader', tempHeader, " normal header", header)
+                        //tempHeader = header["Content-Type"] = "application/json"
+                        const body = {
+                            "name":"Simple discovery test",
+                            "description":"just a simple test"
+                        }
+                        axios
+                            .post(endpoint, body, {headers: header})
+                            .then(response => {
+                                console.log('response from playlist creation', response)
+                                console.log('created playlist id', response.data.id)
+                                setCreatedPlaylistId(response.data.id)
+                                return response.data.id
+                            })
+                            .then(playlist_id => {
+                                const promises = allSongs.map(songBundle => {
+                                    return axios
+                                            .post("https://api.spotify.com/v1/playlists/"+playlist_id+"/tracks", 
+                                                {"uris":songBundle}, 
+                                                {headers:header})
+                                            .then(response => {
+                                                console.log('response from adding bundle of songs to the playlist', response)
+                                                return response
+                                            })
+                                })
+                                Promise.all(promises)
+                                .then(response => {
+                                    console.log('response from executing all promises (for adding songs to a playlist)', response)
+                                })
+                            })
+                    })
+                })
+
+
+
+
+                //.then(relatedSongs => {
+                //     console.log('checking if relatedSongs made it to next "then"', relatedSongs)
+                //     //create a playlist
+                //     //add songs to playlist
+                    // const endpoint = "https://api.spotify.com/v1/users/"+"alex31734"+"/playlists"
+
+                    // const tempHeader = header["Content-Type"] = "application/json"
+                    // const body = {
+                    //     "name":"Simple discovery test",
+                    //     "description":"just a simple test"
+                    // }
+                    // //let playlist_id = null
+                    // //console.log('header state', header)
+
+                    // axios
+                    //     .post(endpoint, body, {headers: header})
+                    //     .then(response => {
+                    //         //need to store this playlist id somewhere
+                    //         //console.log('response from playlist creation', response)
+                    //         setCreatedPlaylistId(response.data.id)
+                    //         //console.log('playlist_id', playlist_id)
+                    //     })
+                    //     .catch(error => {
+                    //         console.log('errorrrr ', error)
+                    //     })
+                    
+                //     return relatedSongs
+                // })
+                // .then(relatedSongs => {
+                //     console.log('playlist id', createdPlaylistId)
+                //     console.log('related songs', relatedSongs)
+                // })
+                // .catch(error => {
+                //     console.log('error! ', error)
+                // })
+    }
+
+    const getRelatedArtistsSongs = id => {
+        const artists = getRelatedArtists(id)
+        const country_id = userData.country
+        for(let i=0; i<3; i++) {
+            const endpoint = "https://api.spotify.com/v1/artists/"+artists[i]+"/top-tracks?country=" + country_id
+            axios
+                .get(endpoint, {headers : header})
+                .then(response => {
+                    console.log("response from related songs: ", response)
+                })
+        }
+        
+    }
 
     //when the button is clicked, we go to the loading page
-    //in the background it will make an api call to the artist, finding out who the similar
-    //artists are. it will then store these "similar" artists and find their top songs
+    //in the background it will make an api call to the artist, finding out who the similar X
+    //artists are. it will then store these "similar" artists and find their top songs X
     //these top songs will then be put into a playlist
     //once this is done the user is presented with a "get playlist" button which will
     //open their playlist in a new tab
     const listOfArtists = artists.map(info => 
         <div key={info.id}>
             {info.name}
-            <button>
-                
+            <button onClick={() => getRelatedArtists(info.id)}>
                 select
             </button>
         </div>
     )
+
+    
 
     const listOfSongs = songs.map(info => 
         <div key={info.id}>
@@ -228,6 +360,8 @@ const App = () => {
         </div>
     )
 }
+
+
 
 
 const generateRandomString = length => {

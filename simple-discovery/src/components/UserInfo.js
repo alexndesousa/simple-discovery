@@ -7,6 +7,7 @@ const UserInfo = ({ header, userData, setUserData, setUserPlaylists }) => {
     const endpoint = "https://api.spotify.com/v1/me"
 
     //this correctly fetches the authenticated users information
+    //if the users playlists have already been fetched, dont do it again - no need to waste api calls
     useEffect(() => {
         if(header !== null) {
             axios
@@ -16,7 +17,8 @@ const UserInfo = ({ header, userData, setUserData, setUserPlaylists }) => {
                     const formattedData = {
                             "username":response.data.display_name,
                             "id":response.data.id,
-                            "email": response.data.email
+                            "email": response.data.email,
+                            "country":response.country
                     }
                     setUserData(formattedData)
                     axios
