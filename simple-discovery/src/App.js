@@ -299,10 +299,14 @@ const App = () => {
                         .map(features => features.uri);
 
                       discoveryService
-                        .createPlaylist(header, setCreatedPlaylistId, userID)
-                        .then(playlist_id => {
+                        .getUserProfileInformation(header, setUserData)
+                        .then(userID => {
                           discoveryService
-                            .createPlaylist(header, setCreatedPlaylistId)
+                            .createPlaylist(
+                              header,
+                              setCreatedPlaylistId,
+                              userID
+                            )
                             .then(playlist_id => {
                               discoveryService
                                 .populatePlaylist(
