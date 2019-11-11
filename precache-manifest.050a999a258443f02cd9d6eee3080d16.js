@@ -1,10 +1,10 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "f6ac24b299ea8a43e32ed55d0979b3d2",
+    "revision": "69889da171d28b2a3e80501daa140fc2",
     "url": "/simple-discovery/index.html"
   },
   {
-    "revision": "4bea32db9bf1d884a115",
+    "revision": "cdf6f5a0b97734a4a62c",
     "url": "/simple-discovery/static/css/main.34de6062.chunk.css"
   },
   {
@@ -12,8 +12,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/simple-discovery/static/js/2.f93065dd.chunk.js"
   },
   {
-    "revision": "4bea32db9bf1d884a115",
-    "url": "/simple-discovery/static/js/main.3e6f8f6b.chunk.js"
+    "revision": "cdf6f5a0b97734a4a62c",
+    "url": "/simple-discovery/static/js/main.1be0b977.chunk.js"
   },
   {
     "revision": "0de49a525d7f9080401c",
