@@ -6,6 +6,7 @@ import CardContent from "@material-ui/core/CardContent";
 import CardMedia from "@material-ui/core/CardMedia";
 import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Typography";
+import LoadingModal from "./LoadingModal"
 
 const useStyles = makeStyles({
   card: {
@@ -16,11 +17,22 @@ const useStyles = makeStyles({
   }
 });
 
-const MusicItem = ({ id, image, name, functionToExecute }) => {
+const MusicItem = ({ id, image, name, functionToExecute, isPlaylistCreated }) => {
   const classes = useStyles();
+  const [open, setOpen] = React.useState(false);
+
+  const handleOpen = () => {
+    setOpen(true)
+  }
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   return (
     <Grid item align="center">
-      <Card className={classes.card} onClick={() => functionToExecute(...id)}>
+      <Card className={classes.card} onClick={() => {functionToExecute(...id); handleOpen()}}>
+        <LoadingModal open={open} handleClose={handleClose} isPlaylistCreated={isPlaylistCreated} />
         <CardActionArea>
           <CardMedia className={classes.media} image={image} title={name} />
           <CardContent>

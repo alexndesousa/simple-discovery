@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import UserInfo from "./components/UserInfo";
-import SearchForm from "./components/SearchForm";
 import discoveryService from "./services/discoveryService";
 import MusicItem from "./components/MusicItem";
 import MusicContainer from "./components/MusicContainer";
@@ -27,6 +26,7 @@ const App = () => {
 
   const [createdPlaylistId, setCreatedPlaylistId] = useState("");
   const [allRelatedSongs, setAllRelatedSongs] = useState([]);
+  const [playlistCreated, setPlaylistCreated] = useState(false)
 
   const [header, setHeader] = useState(null);
   const [state, setState] = useState("");
@@ -167,7 +167,10 @@ const App = () => {
                           allSongs,
                           playlist_id,
                           header
-                        );
+                        ).then(response => {
+                          console.log('playlist created', response)
+                          setPlaylistCreated(true)
+                        })
                       });
                   });
               });
@@ -186,7 +189,10 @@ const App = () => {
           discoveryService
             .createPlaylist(header, setCreatedPlaylistId)
             .then(playlist_id => {
-              discoveryService.populatePlaylist(allSongs, playlist_id, header);
+              discoveryService.populatePlaylist(allSongs, playlist_id, header).then(response => {
+                console.log('playlist created', response)
+                setPlaylistCreated(true)
+              });
             });
         });
     });
@@ -270,8 +276,6 @@ const App = () => {
                   discoveryService
                     .getAudioFeature(songID, header)
                     .then(songAudioFeatures => {
-                      //make what im returning a statement. if it resolves as false (aka if the danceability parameter doesnt exist) return null
-                      console.log("songaudiofeatures", songAudioFeatures);
                       const similarSongs = allAudioFeatures
                         .filter(feature => {
                           return (
@@ -286,7 +290,6 @@ const App = () => {
                           );
                         })
                         .map(features => features.uri);
-                      console.log("similar songs", similarSongs);
                       discoveryService
                         .createPlaylist(header, setCreatedPlaylistId)
                         .then(playlist_id => {
@@ -294,7 +297,10 @@ const App = () => {
                             similarSongs,
                             playlist_id,
                             header
-                          );
+                          ).then(response => {
+                            console.log('playlist created', response)
+                            setPlaylistCreated(true)
+                          })
                         });
                     });
                 });
@@ -310,6 +316,7 @@ const App = () => {
       image={info.image}
       name={info.name}
       functionToExecute={createPlaylistFromPlaylist_Artist}
+      isPlaylistCreated={playlistCreated}
     />
   ));
 
@@ -320,6 +327,7 @@ const App = () => {
       image={info.image}
       name={info.name}
       functionToExecute={createPlaylistWithSimilarArtists}
+      isPlaylistCreated={playlistCreated}
     />
   ));
 
@@ -330,12 +338,14 @@ const App = () => {
       image={info.image}
       name={`${info.name} - ${info.artist}`}
       functionToExecute={createPlaylistWithSimilarSongs}
+      isPlaylistCreated={playlistCreated}
     />
   ));
 
   const MainMenu = (
     <>
       {isMainMenuVisible ? (
+        
         <Grid
           container
           direction="column"
@@ -344,6 +354,7 @@ const App = () => {
           spacing={2}
           style={{ minHeight: "80vh", margin: "0", width: "100%" }}
         >
+          <h2>Select an option from the list below</h2>
           <Grid item>
             <Button
               variant="contained"
