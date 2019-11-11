@@ -26,7 +26,7 @@ const App = () => {
 
   const [createdPlaylistId, setCreatedPlaylistId] = useState("");
   const [allRelatedSongs, setAllRelatedSongs] = useState([]);
-  const [playlistCreated, setPlaylistCreated] = useState(false)
+  const [playlistCreated, setPlaylistCreated] = useState(false);
 
   const [header, setHeader] = useState(null);
   const [state, setState] = useState("");
@@ -65,7 +65,7 @@ const App = () => {
   //they are then sent back to the redirect uri (in this case localhost)
   const authenticateUser = () => {
     const client_id = "a4e259d0257745afb6d9bc995d65808d";
-    const redirect_uri = "http://localhost:3000/";
+    const redirect_uri = "https://alexndesousa.github.io/simple-discovery/";
     const scope =
       "user-top-read user-read-private user-read-email playlist-modify-public playlist-read-private";
 
@@ -114,7 +114,6 @@ const App = () => {
   useEffect(() => {
     console.log("hello from the useEffect thingy mabob");
     getAuthorizationHeader();
-
     //something like below could work, but it isnt exactly the most optimal way of doing it.
     //what happens if a user puts something after the forward slash, theres no way for them
     //to know what went wrong
@@ -161,16 +160,18 @@ const App = () => {
                   )
                   .then(allSongs => {
                     discoveryService
-                      .createPlaylist(header, setCreatedPlaylistId)
-                      .then(playlist_id => {
-                        discoveryService.populatePlaylist(
-                          allSongs,
-                          playlist_id,
-                          header
-                        ).then(response => {
-                          console.log('playlist created', response)
-                          setPlaylistCreated(true)
-                        })
+                      .getUserProfileInformation(header, setUserData)
+                      .then(userID => {
+                        discoveryService
+                          .createPlaylist(header, setCreatedPlaylistId, userID)
+                          .then(playlist_id => {
+                            discoveryService
+                              .populatePlaylist(allSongs, playlist_id, header)
+                              .then(response => {
+                                console.log("playlist created", response);
+                                setPlaylistCreated(true);
+                              });
+                          });
                       });
                   });
               });
@@ -187,12 +188,18 @@ const App = () => {
         .getArtistsTopSongs(relatedArtists, header, setAllRelatedSongs)
         .then(allSongs => {
           discoveryService
-            .createPlaylist(header, setCreatedPlaylistId)
-            .then(playlist_id => {
-              discoveryService.populatePlaylist(allSongs, playlist_id, header).then(response => {
-                console.log('playlist created', response)
-                setPlaylistCreated(true)
-              });
+            .getUserProfileInformation(header, setUserData)
+            .then(userID => {
+              discoveryService
+                .createPlaylist(header, setCreatedPlaylistId, userID)
+                .then(playlist_id => {
+                  discoveryService
+                    .populatePlaylist(allSongs, playlist_id, header)
+                    .then(response => {
+                      console.log("playlist created", response);
+                      setPlaylistCreated(true);
+                    });
+                });
             });
         });
     });
@@ -290,17 +297,24 @@ const App = () => {
                           );
                         })
                         .map(features => features.uri);
+
                       discoveryService
-                        .createPlaylist(header, setCreatedPlaylistId)
+                        .createPlaylist(header, setCreatedPlaylistId, userID)
                         .then(playlist_id => {
-                          discoveryService.populatePlaylist(
-                            similarSongs,
-                            playlist_id,
-                            header
-                          ).then(response => {
-                            console.log('playlist created', response)
-                            setPlaylistCreated(true)
-                          })
+                          discoveryService
+                            .createPlaylist(header, setCreatedPlaylistId)
+                            .then(playlist_id => {
+                              discoveryService
+                                .populatePlaylist(
+                                  similarSongs,
+                                  playlist_id,
+                                  header
+                                )
+                                .then(response => {
+                                  console.log("playlist created", response);
+                                  setPlaylistCreated(true);
+                                });
+                            });
                         });
                     });
                 });
@@ -345,7 +359,6 @@ const App = () => {
   const MainMenu = (
     <>
       {isMainMenuVisible ? (
-        
         <Grid
           container
           direction="column"

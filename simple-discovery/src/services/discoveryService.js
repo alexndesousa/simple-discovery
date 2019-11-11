@@ -14,6 +14,7 @@ const getUserProfileInformation = (header, setUserData) => {
       country: response.country
     };
     setUserData(formattedData);
+    return response.data.id
   });
 };
 
@@ -145,13 +146,13 @@ const getArtistsTopSongs = (artists, header, setAllRelatedSongs) => {
   });
 };
 
-const createPlaylist = (header, setCreatedPlaylistID) => {
+const createPlaylist = (header, setCreatedPlaylistID, userID) => {
   //MUST NOT FORGET TO CHANGE USER ID
-  const endpoint = baseUrl + "/users/" + "alex31734" + "/playlists";
+  const endpoint = baseUrl + "/users/" + userID + "/playlists";
   header["Content-Type"] = "application/json";
   const body = {
-    name: "Simple discovery test",
-    description: "just a simple test"
+    name: "Simple discovery",
+    description: "Created by simple-discovery"
   };
   return axios.post(endpoint, body, { headers: header }).then(response => {
     setCreatedPlaylistID(response.data.id);
