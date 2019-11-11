@@ -1,6 +1,7 @@
 import axios from "axios";
-import chunkArray from "../utils/utils";
-import Bottleneck from "bottleneck"
+import { chunkArray } from "../utils/utils";
+import Bottleneck from "bottleneck";
+import placeholderImage from "../assets/placeholder.png";
 
 const baseUrl = "https://api.spotify.com/v1";
 
@@ -48,7 +49,9 @@ const searchForArtist = (query, header, setArtists, setArtistSearched) => {
       const formattedArtists = response.data.artists.items.map(info => {
         let pair = {
           name: info.name,
-          id: info.id
+          id: info.id,
+          image:
+            info.images[0] !== undefined ? info.images[0].url : placeholderImage
         };
         return pair;
       });
@@ -98,35 +101,44 @@ const getSimilarArtists = (id, header) => {
 };
 
 const getMultipleSimilarArtists = (artistIDs, header) => {
-  let allArtistIDs = []
-  const promises = artistIDs.map(id => getSimilarArtists(id, header).then(response => {
-    allArtistIDs = allArtistIDs.concat(response)
-    return response
-  }))
+  let allArtistIDs = [];
+  const promises = artistIDs.map(id =>
+    getSimilarArtists(id, header).then(response => {
+      allArtistIDs = allArtistIDs.concat(response);
+      return response;
+    })
+  );
   return Promise.all(promises).then(() => {
     //console.log('response from the promises for multiple similar artists', response)
     //console.log('response from the promises for multiple similar artists', allArtistIDs)
-    const allArtistIDsNoDuplicates = allArtistIDs.filter((item, index, array) => array.indexOf(item) === index)
-    console.log('response from the promises for multiple similar artists NO DUPLICATES', allArtistIDsNoDuplicates)
-    return allArtistIDsNoDuplicates
-  })
-}
+    const allArtistIDsNoDuplicates = allArtistIDs.filter(
+      (item, index, array) => array.indexOf(item) === index
+    );
+    console.log(
+      "response from the promises for multiple similar artists NO DUPLICATES",
+      allArtistIDsNoDuplicates
+    );
+    return allArtistIDsNoDuplicates;
+  });
+};
 
 const getArtistsTopSongs = (artists, header, setAllRelatedSongs) => {
   let allSongs = [];
   const limiter = new Bottleneck({
-    maxConcurrent:4,
-    minTime:500
-  })
+    maxConcurrent: 4,
+    minTime: 500
+  });
   const endpoint = baseUrl + "/artists/";
   const promises = artists.map(artist => {
-    return limiter.schedule(() => axios
-      .get(endpoint + artist + "/top-tracks?country=GB", { headers: header })
-      .then(response => {
-        const songURIs = response.data.tracks.map(info => info.uri);
-        //console.log('made a request', response, songURIs)
-        allSongs = allSongs.concat(songURIs);
-      }));
+    return limiter.schedule(() =>
+      axios
+        .get(endpoint + artist + "/top-tracks?country=GB", { headers: header })
+        .then(response => {
+          const songURIs = response.data.tracks.map(info => info.uri);
+          //console.log('made a request', response, songURIs)
+          allSongs = allSongs.concat(songURIs);
+        })
+    );
   });
   return Promise.all(promises).then(() => {
     //console.log("allSongs", allSongs);
@@ -188,7 +200,7 @@ const getArtistsAlbums = (artistIDs, header) => {
           albumIDs = [].concat(artistAlbums);
         }
         return response;
-      })
+      });
   });
   return Promise.all(promises).then(response => {
     allAlbumIDs.push(albumIDs);
@@ -283,17 +295,19 @@ const getPlaylistsArtists = (playlistID, amountOfTracks, header) => {
         )
         .then(response => {
           //maps to the artist id and removes duplicates
-          const artistIDs = response.data.items.map(item => item.track.artists[0].id).filter((item, index, array) => array.indexOf(item) === index)
-          allArtists = allArtists.concat(artistIDs)
-          return response
+          const artistIDs = response.data.items
+            .map(item => item.track.artists[0].id)
+            .filter((item, index, array) => array.indexOf(item) === index);
+          allArtists = allArtists.concat(artistIDs);
+          return response;
         })
     );
   }
 
   return Promise.all(allPromises).then(response => {
     console.log("response from all playlist tracks getting", response);
-    console.log('all playlist track getting ', allArtists)
-    return allArtists
+    console.log("all playlist track getting ", allArtists);
+    return allArtists;
   });
 };
 
@@ -311,24 +325,26 @@ const getPlaylistsTracks = (playlistID, amountOfTracks, header) => {
         )
         .then(response => {
           //maps to the artist id and removes duplicates
-          console.log('RESPONSE FROM GETPLAYLISTTRACKS', response)
-          const trackIDs = response.data.items.map(item => {
-            let obj = {
-              "songID":item.track.id,
-              "id":item.track.artists[0].id
-            }
-            return obj
-          }).filter((item, index, array) => array.indexOf(item) === index)
-          allTracks = allTracks.concat(trackIDs)
-          return response
+          console.log("RESPONSE FROM GETPLAYLISTTRACKS", response);
+          const trackIDs = response.data.items
+            .map(item => {
+              let obj = {
+                songID: item.track.id,
+                id: item.track.artists[0].id
+              };
+              return obj;
+            })
+            .filter((item, index, array) => array.indexOf(item) === index);
+          allTracks = allTracks.concat(trackIDs);
+          return response;
         })
     );
   }
 
   return Promise.all(allPromises).then(response => {
     console.log("response from all playlist tracks getting", response);
-    console.log('all playlist track getting ', allTracks)
-    return allTracks
+    console.log("all playlist track getting ", allTracks);
+    return allTracks;
   });
 };
 
@@ -347,6 +363,6 @@ export default {
   getAudioFeature: getAudioFeature,
   getNumberOfTracksInPlaylist: getNumberOfTracksInPlaylist,
   getPlaylistsArtists: getPlaylistsArtists,
-  getPlaylistsTracks:getPlaylistsTracks,
-  getMultipleSimilarArtists:getMultipleSimilarArtists
+  getPlaylistsTracks: getPlaylistsTracks,
+  getMultipleSimilarArtists: getMultipleSimilarArtists
 };

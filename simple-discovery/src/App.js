@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from "react";
 import UserInfo from "./components/UserInfo";
-import ArtistSearch from "./components/ArtistSearch";
-import SongSearch from "./components/SongSearch";
+import SearchForm from "./components/SearchForm";
 import discoveryService from "./services/discoveryService";
+import MusicItem from "./components/MusicItem";
+import MusicContainer from "./components/MusicContainer";
+import SearchContainer from "./components/SearchContainer";
+import { generateRandomString } from "./utils/utils";
+
+import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
+import IconButton from "@material-ui/core/IconButton";
+import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 
 //hash parameters will get the parameters in the url
 //need to figureo ut how to get them after a redirect
@@ -118,37 +125,22 @@ const App = () => {
     // }
   }, []);
 
-  const listOfPlaylists = userPlaylists.map(info => (
-    <div key={info.id}>
-      <img
-        src={info.image}
-        width="100"
-        alt={"image of " + info.name + " playlist"}
-      ></img>
-      {info.name}
-      <button onClick={() => createPlaylistFromPlaylist_Artist(info.id)}>
-        select
-      </button>
-    </div>
-  ));
+  const useStyles = makeStyles({
+    root: {
+      flexgrow: 1
+    },
+    card: {
+      maxWidth: 345
+    },
+    media: {
+      height: 140
+    },
+    back_button: {
+      left: "10%"
+    }
+  });
 
-  const userProfileInformation = (
-    <div key={userData.id}>
-      <h1>{userData.username}</h1>
-      <h1>{userData.email}</h1>
-      <h1>{userData.id}</h1>
-      {listOfPlaylists}
-    </div>
-  );
-
-  // const createPlaylistFromPlaylist_Song = id => {
-  //   discoveryService
-  //   .getNumberOfTracksInPlaylist(id, header)
-  //   .then(numberOfTracks => {
-  //     discoveryService
-  //       .getPlaylistsTracks(id, numberOfTracks, header)
-  //   })
-  // }
+  const classes = useStyles();
 
   const createPlaylistFromPlaylist_Artist = id => {
     discoveryService
@@ -264,11 +256,6 @@ const App = () => {
 
   // };
 
-  // const createPlaylistWithSimilarSongs = (id, songID) => {
-  //   findSimilarSongs(id, songID)
-  //   .then(similarSongs => {})
-  // }
-
   const createPlaylistWithSimilarSongs = (id, songID) => {
     discoveryService.getSimilarArtists(id, header).then(relatedArtists => {
       discoveryService
@@ -316,34 +303,35 @@ const App = () => {
     });
   };
 
+  const listOfPlaylists = userPlaylists.map(info => (
+    <MusicItem
+      key={info.id}
+      id={[info.id]}
+      image={info.image}
+      name={info.name}
+      functionToExecute={createPlaylistFromPlaylist_Artist}
+    />
+  ));
+
   const listOfArtists = artists.map(info => (
-    <div key={info.id}>
-      {info.name}
-      <button onClick={() => createPlaylistWithSimilarArtists(info.id)}>
-        select
-      </button>
-    </div>
+    <MusicItem
+      key={info.id}
+      id={[info.id]}
+      image={info.image}
+      name={info.name}
+      functionToExecute={createPlaylistWithSimilarArtists}
+    />
   ));
 
   const listOfSongs = songs.map(info => (
-    <div key={info.id}>
-      <img
-        src={info.image}
-        width="100"
-        alt={"image of " + info.name + " track"}
-      ></img>
-      {info.name} - {info.artist}
-      <button
-        onClick={() => createPlaylistWithSimilarSongs(info.artist_id, info.id)}
-      >
-        select
-      </button>
-    </div>
+    <MusicItem
+      key={info.id}
+      id={[info.artist_id, info.id]}
+      image={info.image}
+      name={`${info.name} - ${info.artist}`}
+      functionToExecute={createPlaylistWithSimilarSongs}
+    />
   ));
-
-
-  //this external grid should just go in the return portion of this component
-  //why keep creating grids when I just need to wrap all the components in one?
 
   const MainMenu = (
     <>
@@ -401,74 +389,21 @@ const App = () => {
     <>
       {isPlaylistPageVisible ? (
         <div>
-          <div>
-            <UserInfo
-              header={header}
-              setUserData={setUserData}
-              setUserPlaylists={setUserPlaylists}
-            ></UserInfo>
-          </div>
-          {userProfileInformation}
-          <button
+          <IconButton
+            className={classes.back_button}
             onClick={() => {
               togglePlaylistPage();
               toggleMainMenu();
             }}
           >
-            back
-          </button>
-        </div>
-      ) : null}
-    </>
-  );
-
-  const ArtistPage = (
-    <>
-      {isArtistPageVisible ? (
-        <div>
-          <div>
-            <ArtistSearch
-              newArtistSearch={newArtistSearch}
-              handleArtistSearch={handleArtistSearch}
-              header={header}
-              setArtists={setArtists}
-            />
-          </div>
-          {listOfArtists}
-          <button
-            onClick={() => {
-              toggleArtistPage();
-              toggleMainMenu();
-            }}
-          >
-            back
-          </button>
-        </div>
-      ) : null}
-    </>
-  );
-
-  const SongPage = (
-    <>
-      {isSongPageVisible ? (
-        <div>
-          <div>
-            <SongSearch
-              newSongSearch={newSongSearch}
-              handleSongSearch={handleSongSearch}
-              header={header}
-              setSongs={setSongs}
-            />
-          </div>
-          {listOfSongs}
-          <button
-            onClick={() => {
-              toggleSongPage();
-              toggleMainMenu();
-            }}
-          >
-            back
-          </button>
+            <ArrowBackIcon fontSize="large" />
+          </IconButton>
+          <UserInfo
+            header={header}
+            setUserData={setUserData}
+            setUserPlaylists={setUserPlaylists}
+          ></UserInfo>
+          <MusicContainer musicItems={listOfPlaylists} />
         </div>
       ) : null}
     </>
@@ -483,23 +418,32 @@ const App = () => {
 
       {MainMenu}
       {PlaylistPage}
-      {ArtistPage}
-      {SongPage}
+      <SearchContainer
+        isPageVisible={isArtistPageVisible}
+        togglePage={toggleArtistPage}
+        toggleMainMenu={toggleMainMenu}
+        searchLabel="Artist name"
+        newSearch={newArtistSearch}
+        handleSearch={handleArtistSearch}
+        header={header}
+        setValues={setArtists}
+        type="artist"
+        musicItems={listOfArtists}
+      />
+      <SearchContainer
+        isPageVisible={isSongPageVisible}
+        togglePage={toggleSongPage}
+        toggleMainMenu={toggleMainMenu}
+        searchLabel="Song name"
+        newSearch={newSongSearch}
+        handleSearch={handleSongSearch}
+        header={header}
+        setValues={setSongs}
+        type="song"
+        musicItems={listOfSongs}
+      />
     </div>
   );
-};
-
-//this can also be moved into
-const generateRandomString = length => {
-  let text = "";
-  const possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-  while (text.length <= length) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-
-  return text;
 };
 
 export default App;
