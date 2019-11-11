@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/simple-discovery/static/css/main.34de6062.chunk.css",
-    "main.js": "/simple-discovery/static/js/main.d8b81688.chunk.js",
-    "main.js.map": "/simple-discovery/static/js/main.d8b81688.chunk.js.map",
+    "main.js": "/simple-discovery/static/js/main.3e6f8f6b.chunk.js",
+    "main.js.map": "/simple-discovery/static/js/main.3e6f8f6b.chunk.js.map",
     "runtime-main.js": "/simple-discovery/static/js/runtime-main.bcd95950.js",
     "runtime-main.js.map": "/simple-discovery/static/js/runtime-main.bcd95950.js.map",
     "static/js/2.f93065dd.chunk.js": "/simple-discovery/static/js/2.f93065dd.chunk.js",
     "static/js/2.f93065dd.chunk.js.map": "/simple-discovery/static/js/2.f93065dd.chunk.js.map",
     "index.html": "/simple-discovery/index.html",
-    "precache-manifest.e28ce8301e360ac0ceaf6d36194e8b9b.js": "/simple-discovery/precache-manifest.e28ce8301e360ac0ceaf6d36194e8b9b.js",
+    "precache-manifest.a2014f28a01e961601a6557fbaac4ada.js": "/simple-discovery/precache-manifest.a2014f28a01e961601a6557fbaac4ada.js",
     "service-worker.js": "/simple-discovery/service-worker.js",
     "static/css/main.34de6062.chunk.css.map": "/simple-discovery/static/css/main.34de6062.chunk.css.map",
     "static/media/placeholder.png": "/simple-discovery/static/media/placeholder.f7c55a13.png"
@@ -17,6 +17,6 @@
     "static/js/runtime-main.bcd95950.js",
     "static/js/2.f93065dd.chunk.js",
     "static/css/main.34de6062.chunk.css",
-    "static/js/main.d8b81688.chunk.js"
+    "static/js/main.3e6f8f6b.chunk.js"
   ]
 }
