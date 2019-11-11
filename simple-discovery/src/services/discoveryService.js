@@ -109,8 +109,6 @@ const getMultipleSimilarArtists = (artistIDs, header) => {
     })
   );
   return Promise.all(promises).then(() => {
-    //console.log('response from the promises for multiple similar artists', response)
-    //console.log('response from the promises for multiple similar artists', allArtistIDs)
     const allArtistIDsNoDuplicates = allArtistIDs.filter(
       (item, index, array) => array.indexOf(item) === index
     );
