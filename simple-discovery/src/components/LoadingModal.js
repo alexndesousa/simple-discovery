@@ -10,11 +10,17 @@ const useStyles = makeStyles(theme => ({
     backgroundColor: theme.palette.background.paper,
     border: "2px solid #000",
     boxShadow: theme.shadows[5],
-    padding: theme.spacing(2, 4, 3)
+    padding: theme.spacing(2, 4, 3),
+    borderRadius:"3%"
   }
 }));
 
-const LoadingModal = ({ open, handleClose, isPlaylistCreated }) => {
+const LoadingModal = ({
+  open,
+  handleClose,
+  isPlaylistCreated,
+  isCloseAllowed
+}) => {
   const classes = useStyles();
 
   return (
@@ -24,6 +30,8 @@ const LoadingModal = ({ open, handleClose, isPlaylistCreated }) => {
         aria-describedby="simple-modal-description"
         open={open}
         onClose={handleClose}
+        disableBackdropClick={isCloseAllowed}
+        disableEscapeKeyDown={isCloseAllowed}
         style={{
           display: "flex",
           alignItems: "center",
@@ -31,8 +39,9 @@ const LoadingModal = ({ open, handleClose, isPlaylistCreated }) => {
         }}
       >
         {isPlaylistCreated ? (
-          <div className={classes.paper}>
-          <h2>Playlist created</h2>
+          <div className={classes.paper} align="center">
+            <h2>Playlist created</h2>
+            <p>(Click off this box to close it)</p>
           </div>
         ) : (
           <div className={classes.paper}>
@@ -40,7 +49,6 @@ const LoadingModal = ({ open, handleClose, isPlaylistCreated }) => {
             <div align="center">
               <CircularProgress />
             </div>
-            
           </div>
         )}
       </Modal>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
 import CardActionArea from "@material-ui/core/CardActionArea";
@@ -17,9 +17,16 @@ const useStyles = makeStyles({
   }
 });
 
-const MusicItem = ({ id, image, name, functionToExecute, isPlaylistCreated }) => {
+const MusicItem = ({ id, image, name, functionToExecute, isPlaylistCreated, setPlaylistCreated }) => {
   const classes = useStyles();
   const [open, setOpen] = useState(false);
+  const [allowClose, setAllowClose] = useState(true)
+
+  useEffect(() => {
+    if(isPlaylistCreated) {
+      setAllowClose(false)
+    }
+  }, [isPlaylistCreated])
 
   const handleOpen = () => {
     setOpen(true)
@@ -27,11 +34,14 @@ const MusicItem = ({ id, image, name, functionToExecute, isPlaylistCreated }) =>
 
   const handleClose = () => {
     setOpen(false);
+    if (isPlaylistCreated) {
+      setPlaylistCreated(false)
+    }
   };
 
   return (
     <Grid item align="center">
-      <LoadingModal open={open} handleClose={handleClose} isPlaylistCreated={isPlaylistCreated} />
+      <LoadingModal open={open} handleClose={handleClose} isPlaylistCreated={isPlaylistCreated} isCloseAllowed={allowClose} />
       <Card className={classes.card} onClick={() => {functionToExecute(...id); handleOpen()}}>
         
         <CardActionArea>
