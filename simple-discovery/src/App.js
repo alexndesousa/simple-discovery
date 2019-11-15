@@ -16,6 +16,7 @@ import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 //need to figureo ut how to get them after a redirect
 
 const App = () => {
+  const [newPlaylistSearch, setNewPlaylistSearch] = useState("")
   const [newArtistSearch, setNewArtistSearch] = useState("");
   const [newSongSearch, setNewSongSearch] = useState("");
 
@@ -33,6 +34,10 @@ const App = () => {
   const [isArtistPageVisible, setArtistPageVisibility] = useState(false);
   const [isSongPageVisible, setSongPageVisibility] = useState(false);
   const [isPlaylistPageVisible, setPlaylistPageVisibility] = useState(false);
+
+  const handlePlaylistSearch = event => {
+    setNewPlaylistSearch(event.target.value)
+  }
 
   const handleArtistSearch = event => {
     setNewArtistSearch(event.target.value);
@@ -152,7 +157,9 @@ const App = () => {
     discoveryService.createPlaylistWithSimilarSongs(id, songID, header, setPlaylistCreated)
   }
 
-  const listOfPlaylists = userPlaylists.map(info => (
+  const listOfPlaylists = userPlaylists.filter(playlist => {
+    return playlist.name.toUpperCase().includes(newPlaylistSearch.toUpperCase())
+  }).map(info => (
     <MusicItem
       key={info.id}
       id={[info.id]}
@@ -161,7 +168,7 @@ const App = () => {
       functionToExecute={createPlaylistFromPlaylist_Artist}
       isPlaylistCreated={playlistCreated}
     />
-  ));
+  ))
 
   const listOfArtists = artists.map(info => (
     <MusicItem
@@ -240,36 +247,23 @@ const App = () => {
 
   const PlaylistPage = (
     <>
-      {isPlaylistPageVisible ? (
-        <div>
-          <IconButton
-            className={classes.back_button}
-            onClick={() => {
-              togglePlaylistPage();
-              toggleMainMenu();
-            }}
-          >
-            <ArrowBackIcon fontSize="large" />
-          </IconButton>
-          <UserInfo
-            header={header}
-            setUserPlaylists={setUserPlaylists}
-          ></UserInfo>
-          <MusicContainer musicItems={listOfPlaylists} />
-        </div>
-      ) : null}
+      <SearchContainer
+        isPageVisible={isPlaylistPageVisible}
+        togglePage={togglePlaylistPage}
+        toggleMainMenu={toggleMainMenu}
+        searchLabel="Playlist name"
+        newSearch={newPlaylistSearch}
+        handleSearch={handlePlaylistSearch}
+        header={header}
+        setValues={setUserPlaylists}
+        type="playlist"
+        musicItems={listOfPlaylists}
+      />
     </>
-  );
+  )
 
-  return (
+  const ArtistPage = (
     <div>
-      {isLoginVisible ? (
-        <button onClick={() => authenticateUser()}>authenticate</button>
-      ) : null}
-      {/* {isLoginVisible ? <button onClick={() => toggleMainMenu()} >authenticate</button> : null} */}
-
-      {MainMenu}
-      {PlaylistPage}
       <SearchContainer
         isPageVisible={isArtistPageVisible}
         togglePage={toggleArtistPage}
@@ -282,6 +276,11 @@ const App = () => {
         type="artist"
         musicItems={listOfArtists}
       />
+    </div>
+  )
+
+  const SongPage = (
+    <div>
       <SearchContainer
         isPageVisible={isSongPageVisible}
         togglePage={toggleSongPage}
@@ -294,6 +293,20 @@ const App = () => {
         type="song"
         musicItems={listOfSongs}
       />
+    </div>
+  )
+
+  return (
+    <div>
+      {isLoginVisible ? (
+        <button onClick={() => authenticateUser()}>authenticate</button>
+      ) : null}
+      {/* {isLoginVisible ? <button onClick={() => toggleMainMenu()} >authenticate</button> : null} */}
+
+      {MainMenu}
+      {PlaylistPage}
+      {ArtistPage}
+      {SongPage}
     </div>
   );
 };

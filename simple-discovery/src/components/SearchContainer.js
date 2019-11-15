@@ -1,5 +1,6 @@
 import React from "react";
 import SearchForm from "./SearchForm";
+import PlaylistForm from "./PlaylistForm"
 import IconButton from "@material-ui/core/IconButton";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 import MusicContainer from "./MusicContainer";
@@ -39,6 +40,16 @@ const SearchContainer = ({
             <ArrowBackIcon fontSize="large" />
           </IconButton>
 
+
+          {type === "playlist" ? 
+          <PlaylistForm
+          searchLabel={searchLabel}
+          newSearch={newSearch}
+          handleSearch={handleSearch}
+          header={header}
+          setValues={setValues}
+        />
+        :
           <SearchForm
             searchLabel={searchLabel}
             newSearch={newSearch}
@@ -47,6 +58,7 @@ const SearchContainer = ({
             setValues={setValues}
             type={type}
           />
+          }
           <MusicContainer musicItems={musicItems} />
         </div>
       ) : null}
