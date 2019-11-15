@@ -1,20 +1,61 @@
 import axios from "axios";
 import { chunkArray } from "../utils/utils";
-import Bottleneck from "bottleneck";
 import placeholderImage from "../assets/placeholder.png";
 
 const baseUrl = "https://api.spotify.com/v1";
 
-const getUserProfileInformation = (header, setUserData) => {
+const sleepRequest = (milliseconds, originalRequest) => {
+  console.log("originalRequest", originalRequest);
+  return new Promise((resolve, reject) => {
+    setTimeout(
+      () =>
+        resolve(
+          axios({
+            method: originalRequest.method,
+            url: originalRequest.url,
+            data: originalRequest.data,
+            headers: originalRequest.headers
+          })
+        ),
+      milliseconds
+    );
+  });
+};
+
+axios.interceptors.response.use(
+  response => {
+    return response;
+  },
+  error => {
+    console.log("error.response", error.response);
+    const {
+      config,
+      response: { status }
+    } = error;
+    const originalRequest = config;
+    if (status === 429 || status === 500) {
+      return sleepRequest(
+        error.response.headers["retry-after"] * 1000,
+        originalRequest
+      );
+    } else if (status === 401) {
+      ///handle reauthentication
+      return Promise.reject(error);
+    } else {
+      return Promise.reject(error)
+    }
+  }
+);
+
+const getUserProfileInformation = (header) => {
   return axios.get(baseUrl + "/me", { headers: header }).then(response => {
-    const formattedData = {
-      username: response.data.display_name,
-      id: response.data.id,
-      email: response.data.email,
-      country: response.country
-    };
-    setUserData(formattedData);
-    return response.data.id
+    // const formattedData = {
+    //   username: response.data.display_name,
+    //   id: response.data.id,
+    //   email: response.data.email,
+    //   country: response.country
+    // };
+    return response.data.id;
   });
 };
 
@@ -113,40 +154,27 @@ const getMultipleSimilarArtists = (artistIDs, header) => {
     const allArtistIDsNoDuplicates = allArtistIDs.filter(
       (item, index, array) => array.indexOf(item) === index
     );
-    console.log(
-      "response from the promises for multiple similar artists NO DUPLICATES",
-      allArtistIDsNoDuplicates
-    );
     return allArtistIDsNoDuplicates;
   });
 };
 
-const getArtistsTopSongs = (artists, header, setAllRelatedSongs) => {
+const getArtistsTopSongs = (artists, header) => {
   let allSongs = [];
-  const limiter = new Bottleneck({
-    maxConcurrent: 4,
-    minTime: 500
-  });
   const endpoint = baseUrl + "/artists/";
   const promises = artists.map(artist => {
-    return limiter.schedule(() =>
-      axios
-        .get(endpoint + artist + "/top-tracks?country=GB", { headers: header })
-        .then(response => {
-          const songURIs = response.data.tracks.map(info => info.uri);
-          //console.log('made a request', response, songURIs)
-          allSongs = allSongs.concat(songURIs);
-        })
-    );
+    return axios
+      .get(endpoint + artist + "/top-tracks?country=GB", { headers: header })
+      .then(response => {
+        const songURIs = response.data.tracks.map(info => info.uri);
+        allSongs = allSongs.concat(songURIs);
+      });
   });
   return Promise.all(promises).then(() => {
-    //console.log("allSongs", allSongs);
-    setAllRelatedSongs(allSongs);
     return allSongs;
   });
 };
 
-const createPlaylist = (header, setCreatedPlaylistID, userID) => {
+const createPlaylist = (header, userID) => {
   //MUST NOT FORGET TO CHANGE USER ID
   const endpoint = baseUrl + "/users/" + userID + "/playlists";
   header["Content-Type"] = "application/json";
@@ -155,7 +183,6 @@ const createPlaylist = (header, setCreatedPlaylistID, userID) => {
     description: "Created by simple-discovery"
   };
   return axios.post(endpoint, body, { headers: header }).then(response => {
-    setCreatedPlaylistID(response.data.id);
     return response.data.id;
   });
 };
@@ -163,7 +190,6 @@ const createPlaylist = (header, setCreatedPlaylistID, userID) => {
 const populatePlaylist = (allSongs, playlistID, header) => {
   console.log("final allSongs", allSongs);
   const promises = chunkArray(allSongs, 100).map(songBundle => {
-    console.log("songBundle", songBundle);
     return axios
       .post(
         baseUrl + "/playlists/" + playlistID + "/tracks",
@@ -180,13 +206,8 @@ const populatePlaylist = (allSongs, playlistID, header) => {
 //worth noting that i can increase the minimum amount of albums it finds for each artist
 //default is 20, up to a maximum of 50
 const getArtistsAlbums = (artistIDs, header) => {
-  console.log("artistIDs", artistIDs);
   let albumIDs = [];
   let allAlbumIDs = [];
-  // const limiter = new Bottleneck({
-  //   maxConcurrent:5,
-  //   minTime:1000
-  // })
   const promises = artistIDs.map(artistID => {
     return axios
       .get(baseUrl + "/artists/" + artistID + "/albums", { headers: header })
@@ -203,8 +224,6 @@ const getArtistsAlbums = (artistIDs, header) => {
   });
   return Promise.all(promises).then(response => {
     allAlbumIDs.push(albumIDs);
-    console.log("response from getting all artists albums", response);
-    console.log("getting all artists albums", allAlbumIDs);
     return allAlbumIDs;
   });
 };
@@ -217,20 +236,15 @@ const getAlbumsTracks = (albumIDs, header) => {
         headers: header
       })
       .then(response => {
-        //console.log('response from getting tracks', response)
         const trackIdsForThisBundle = response.data.albums.map(album =>
           album.tracks.items.map(item => item.id)
         );
-        //console.log('track ids for this bundle ', trackIdsForThisBundle)
         allTracks = allTracks.concat(trackIdsForThisBundle.flat());
         return response;
       });
   });
 
   return Promise.all(promises).then(response => {
-    console.log("response form getting all trakcs", response);
-    console.log("contents of allTracks", allTracks);
-    console.log("chunked array ", chunkArray(allTracks, 100));
     return chunkArray(allTracks, 100);
   });
 };
@@ -243,18 +257,12 @@ const getAudioFeatures = (allTracks, header) => {
         headers: header
       })
       .then(response => {
-        //console.log('response from audiofeatures ', response)
-        //console.log('specific audiofeatures ', response.data.audio_features)
         audioFeatures = audioFeatures.concat(response.data.audio_features);
         return response;
       });
   });
 
   return Promise.all(promises).then(response => {
-    console.log("response from all audio features ", response);
-    console.log("final audio features: ", audioFeatures);
-    //const sortedFeatures = response.data.audio_features.map(bundle => bundle.audio_features)
-    //console.log('sortedFeatures', sortedFeatures)
     return audioFeatures;
   });
 };
@@ -265,8 +273,6 @@ const getAudioFeature = (trackID, header) => {
       headers: header
     })
     .then(response => {
-      console.log("response for getting single audioFeature", response);
-      console.log("response for getting single audioFeature", response.data);
       return response.data;
     });
 };
@@ -275,7 +281,6 @@ const getNumberOfTracksInPlaylist = (playlistID, header) => {
   return axios
     .get(baseUrl + "/playlists/" + playlistID, { headers: header })
     .then(response => {
-      console.log("number of tracks", response.data.tracks.total);
       return response.data.tracks.total;
     });
 };
@@ -293,7 +298,6 @@ const getPlaylistsArtists = (playlistID, amountOfTracks, header) => {
           { headers: header }
         )
         .then(response => {
-          //maps to the artist id and removes duplicates
           const artistIDs = response.data.items
             .map(item => item.track.artists[0].id)
             .filter((item, index, array) => array.indexOf(item) === index);
@@ -304,8 +308,6 @@ const getPlaylistsArtists = (playlistID, amountOfTracks, header) => {
   }
 
   return Promise.all(allPromises).then(response => {
-    console.log("response from all playlist tracks getting", response);
-    console.log("all playlist track getting ", allArtists);
     return allArtists;
   });
 };
@@ -341,11 +343,135 @@ const getPlaylistsTracks = (playlistID, amountOfTracks, header) => {
   }
 
   return Promise.all(allPromises).then(response => {
-    console.log("response from all playlist tracks getting", response);
-    console.log("all playlist track getting ", allTracks);
     return allTracks;
   });
 };
+
+const createPlaylistFromPlaylist_ArtistBased = (id, header, setPlaylistCreated) => {
+  let songsToAdd = []
+  getNumberOfTracksInPlaylist(id, header)
+  .then(numberOfTracks => getPlaylistsArtists(id, numberOfTracks, header))
+  .then(artistIDs => getMultipleSimilarArtists(artistIDs, header))
+  .then(relatedArtists => getArtistsTopSongs(relatedArtists, header))
+  .then(allSongs => {
+    songsToAdd = allSongs
+    return getUserProfileInformation(header)
+  })
+  .then(userID => createPlaylist(header, userID))
+  .then(playlist_id => populatePlaylist(songsToAdd, playlist_id, header))
+  .then(() => setPlaylistCreated(true))
+}
+
+const createPlaylistWithSimilarArtists = (id, header, setPlaylistCreated) => {
+  let songsToAdd = []
+  getSimilarArtists(id, header)
+  .then(relatedArtists => getArtistsTopSongs(relatedArtists, header))
+  .then(allSongs => {
+    songsToAdd = allSongs
+    return getUserProfileInformation(header)
+  })
+  .then(userID => createPlaylist(header, userID))
+  .then(playlist_id => populatePlaylist(songsToAdd, playlist_id, header))
+  .then(() => setPlaylistCreated(true))
+}
+
+const createPlaylistWithSimilarSongs = (id, songID, header, setPlaylistCreated) => {
+  let allFeatures = []
+  let allSongs = []
+  getSimilarArtists(id, header)
+  .then(relatedArtists => getArtistsAlbums(relatedArtists, header))
+  .then(allAlbums => getAlbumsTracks(allAlbums, header))
+  .then(allTracks => getAudioFeatures(allTracks, header))
+  .then(allAudioFeatures => {
+    allFeatures = allAudioFeatures
+    return getAudioFeature(songID, header)
+  })
+  .then(songAudioFeatures => {
+    allSongs = allFeatures
+      .filter(feature => {
+        return ( feature !== null ?
+          feature.tempo > songAudioFeatures.tempo * 0.9 &&
+          feature.tempo < songAudioFeatures.tempo * 1.1 &&
+          (feature.energy > songAudioFeatures.energy * 0.8 &&
+            feature.energy <
+              songAudioFeatures.energy * 1.2) &&
+          (feature.valence >
+            songAudioFeatures.valence * 0.8 &&
+            feature.valence < songAudioFeatures.valence * 1.2)
+        : false);
+      })
+      .map(features => features.uri)
+  })
+  .then(() => getUserProfileInformation(header))
+  .then(userID => createPlaylist(header,userID))
+  .then(playlist_id => populatePlaylist(allSongs,playlist_id,header))
+  .then(() => setPlaylistCreated(true))
+};
+
+  //EXPERIMENTAL FUNCTIONALITY - meant to create a playlist from similar songs to every song in a given playlist
+
+  // // worth noting that we should also include the current artist into this. this would be handled in the get similar artists
+  // const createPlaylistFromPlaylist_Song = id => {
+
+  //   discoveryService.getNumberOfTracksInPlaylist(id, header)
+  //   .then(numberOfTracks => {
+  //     discoveryService.getPlaylistsTracks(id, numberOfTracks, header).then(allTracks => {
+  //       console.log('allTRACKSSS', allTracks)
+  //       const limiter1 = new Bottleneck({
+  //         maxConcurrent:1,
+  //         minTime:5000
+  //       })
+  //       const limiter2 = new Bottleneck({
+  //         maxConcurrent:1,
+  //         minTime:1000
+  //       })
+  //       const promises = allTracks.map(val => {
+  //         const id = val.id
+  //         const songID = val.songID
+  //         limiter1.schedule(() => discoveryService.getSimilarArtists(id, header).then(relatedArtists => {
+  //           limiter2.schedule(() => discoveryService
+  //             .getArtistsAlbums(relatedArtists, header)
+  //             .then(allAlbums => {
+  //               discoveryService
+  //                 .getAlbumsTracks(allAlbums, header)
+  //                 .then(allTracks => {
+  //                   discoveryService
+  //                     .getAudioFeatures(allTracks, header)
+  //                     .then(allAudioFeatures => {
+  //                       discoveryService
+  //                         .getAudioFeature(songID, header)
+  //                         .then(songAudioFeatures => {
+  //                           console.log("songaudiofeatures", songAudioFeatures);
+  //                           return allAudioFeatures
+  //                             .filter(feature => {
+  //                               return (
+  //                                 feature.tempo > songAudioFeatures.tempo * 0.9 &&
+  //                                 feature.tempo < songAudioFeatures.tempo * 1.1 &&
+  //                                 (feature.energy > songAudioFeatures.energy * 0.8 &&
+  //                                   feature.energy <
+  //                                     songAudioFeatures.energy * 1.2) &&
+  //                                 (feature.valence >
+  //                                   songAudioFeatures.valence * 0.8 &&
+  //                                   feature.valence < songAudioFeatures.valence * 1.2)
+  //                               );
+  //                             })
+  //                             .map(features => features.uri);
+  //                             //return similarSongs
+  //                         })
+  //                     })
+  //                 })
+  //             }))
+  //         }))
+
+  //       })
+  //       return Promise.all(promises).then(response => {
+  //         console.log('THE ONLY RESPONSE IM LOOKING FOR', response)
+  //       })
+  //     })
+  //   })
+
+  // };
+
 
 export default {
   getUserProfileInformation: getUserProfileInformation,
@@ -363,5 +489,8 @@ export default {
   getNumberOfTracksInPlaylist: getNumberOfTracksInPlaylist,
   getPlaylistsArtists: getPlaylistsArtists,
   getPlaylistsTracks: getPlaylistsTracks,
-  getMultipleSimilarArtists: getMultipleSimilarArtists
+  getMultipleSimilarArtists: getMultipleSimilarArtists,
+  createPlaylistFromPlaylist_ArtistBased:createPlaylistFromPlaylist_ArtistBased,
+  createPlaylistWithSimilarArtists:createPlaylistWithSimilarArtists,
+  createPlaylistWithSimilarSongs:createPlaylistWithSimilarSongs
 };

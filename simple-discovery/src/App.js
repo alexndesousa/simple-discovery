@@ -21,11 +21,8 @@ const App = () => {
 
   const [artists, setArtists] = useState([]);
   const [songs, setSongs] = useState([]);
-  const [userData, setUserData] = useState([]);
   const [userPlaylists, setUserPlaylists] = useState([]);
 
-  const [createdPlaylistId, setCreatedPlaylistId] = useState("");
-  const [allRelatedSongs, setAllRelatedSongs] = useState([]);
   const [playlistCreated, setPlaylistCreated] = useState(false);
 
   const [header, setHeader] = useState(null);
@@ -65,7 +62,7 @@ const App = () => {
   //they are then sent back to the redirect uri (in this case localhost)
   const authenticateUser = () => {
     const client_id = "a4e259d0257745afb6d9bc995d65808d";
-    const redirect_uri = "https://alexndesousa.github.io/simple-discovery/";
+    const redirect_uri = "http://localhost:3000/";
     const scope =
       "user-top-read user-read-private user-read-email playlist-modify-public playlist-read-private";
 
@@ -142,190 +139,18 @@ const App = () => {
   const classes = useStyles();
 
   const createPlaylistFromPlaylist_Artist = id => {
-    discoveryService
-      .getNumberOfTracksInPlaylist(id, header)
-      .then(numberOfTracks => {
-        discoveryService
-          .getPlaylistsArtists(id, numberOfTracks, header)
-          .then(artistIDs => {
-            console.log("artistIDs ", artistIDs);
-            discoveryService
-              .getMultipleSimilarArtists(artistIDs, header)
-              .then(relatedArtists => {
-                discoveryService
-                  .getArtistsTopSongs(
-                    relatedArtists,
-                    header,
-                    setAllRelatedSongs
-                  )
-                  .then(allSongs => {
-                    discoveryService
-                      .getUserProfileInformation(header, setUserData)
-                      .then(userID => {
-                        discoveryService
-                          .createPlaylist(header, setCreatedPlaylistId, userID)
-                          .then(playlist_id => {
-                            discoveryService
-                              .populatePlaylist(allSongs, playlist_id, header)
-                              .then(response => {
-                                console.log("playlist created", response);
-                                setPlaylistCreated(true);
-                              });
-                          });
-                      });
-                  });
-              });
-          });
-      });
-  };
+    discoveryService.createPlaylistFromPlaylist_ArtistBased(id, header, setPlaylistCreated)
+  }
 
   //NEED TO PRESENT THE USER WITH A BUTTON LINKING TO THEIR NEWLY CREATED PLAYLIST
 
-  //move this whole thing into its own component then wrap the axios call in an effect hook
   const createPlaylistWithSimilarArtists = id => {
-    discoveryService.getSimilarArtists(id, header).then(relatedArtists => {
-      discoveryService
-        .getArtistsTopSongs(relatedArtists, header, setAllRelatedSongs)
-        .then(allSongs => {
-          discoveryService
-            .getUserProfileInformation(header, setUserData)
-            .then(userID => {
-              discoveryService
-                .createPlaylist(header, setCreatedPlaylistId, userID)
-                .then(playlist_id => {
-                  discoveryService
-                    .populatePlaylist(allSongs, playlist_id, header)
-                    .then(response => {
-                      console.log("playlist created", response);
-                      setPlaylistCreated(true);
-                    });
-                });
-            });
-        });
-    });
-  };
-
-  //EXPERIMENTAL FUNCTIONALITY - meant to create a playlist from similar songs to every song in a given playlist
-
-  // // worth noting that we should also include the current artist into this. this would be handled in the get similar artists
-  // const createPlaylistFromPlaylist_Song = id => {
-
-  //   discoveryService.getNumberOfTracksInPlaylist(id, header)
-  //   .then(numberOfTracks => {
-  //     discoveryService.getPlaylistsTracks(id, numberOfTracks, header).then(allTracks => {
-  //       console.log('allTRACKSSS', allTracks)
-  //       const limiter1 = new Bottleneck({
-  //         maxConcurrent:1,
-  //         minTime:5000
-  //       })
-  //       const limiter2 = new Bottleneck({
-  //         maxConcurrent:1,
-  //         minTime:1000
-  //       })
-  //       const promises = allTracks.map(val => {
-  //         const id = val.id
-  //         const songID = val.songID
-  //         limiter1.schedule(() => discoveryService.getSimilarArtists(id, header).then(relatedArtists => {
-  //           limiter2.schedule(() => discoveryService
-  //             .getArtistsAlbums(relatedArtists, header)
-  //             .then(allAlbums => {
-  //               discoveryService
-  //                 .getAlbumsTracks(allAlbums, header)
-  //                 .then(allTracks => {
-  //                   discoveryService
-  //                     .getAudioFeatures(allTracks, header)
-  //                     .then(allAudioFeatures => {
-  //                       discoveryService
-  //                         .getAudioFeature(songID, header)
-  //                         .then(songAudioFeatures => {
-  //                           console.log("songaudiofeatures", songAudioFeatures);
-  //                           return allAudioFeatures
-  //                             .filter(feature => {
-  //                               return (
-  //                                 feature.tempo > songAudioFeatures.tempo * 0.9 &&
-  //                                 feature.tempo < songAudioFeatures.tempo * 1.1 &&
-  //                                 (feature.energy > songAudioFeatures.energy * 0.8 &&
-  //                                   feature.energy <
-  //                                     songAudioFeatures.energy * 1.2) &&
-  //                                 (feature.valence >
-  //                                   songAudioFeatures.valence * 0.8 &&
-  //                                   feature.valence < songAudioFeatures.valence * 1.2)
-  //                               );
-  //                             })
-  //                             .map(features => features.uri);
-  //                             //return similarSongs
-  //                         })
-  //                     })
-  //                 })
-  //             }))
-  //         }))
-
-  //       })
-  //       return Promise.all(promises).then(response => {
-  //         console.log('THE ONLY RESPONSE IM LOOKING FOR', response)
-  //       })
-  //     })
-  //   })
-
-  // };
+    discoveryService.createPlaylistWithSimilarArtists(id, header, setPlaylistCreated)
+  }
 
   const createPlaylistWithSimilarSongs = (id, songID) => {
-    discoveryService.getSimilarArtists(id, header).then(relatedArtists => {
-      discoveryService
-        .getArtistsAlbums(relatedArtists, header)
-        .then(allAlbums => {
-          discoveryService
-            .getAlbumsTracks(allAlbums, header)
-            .then(allTracks => {
-              discoveryService
-                .getAudioFeatures(allTracks, header)
-                .then(allAudioFeatures => {
-                  discoveryService
-                    .getAudioFeature(songID, header)
-                    .then(songAudioFeatures => {
-                      const similarSongs = allAudioFeatures
-                        .filter(feature => {
-                          return (
-                            feature.tempo > songAudioFeatures.tempo * 0.9 &&
-                            feature.tempo < songAudioFeatures.tempo * 1.1 &&
-                            (feature.energy > songAudioFeatures.energy * 0.8 &&
-                              feature.energy <
-                                songAudioFeatures.energy * 1.2) &&
-                            (feature.valence >
-                              songAudioFeatures.valence * 0.8 &&
-                              feature.valence < songAudioFeatures.valence * 1.2)
-                          );
-                        })
-                        .map(features => features.uri);
-
-                      discoveryService
-                        .getUserProfileInformation(header, setUserData)
-                        .then(userID => {
-                          discoveryService
-                            .createPlaylist(
-                              header,
-                              setCreatedPlaylistId,
-                              userID
-                            )
-                            .then(playlist_id => {
-                              discoveryService
-                                .populatePlaylist(
-                                  similarSongs,
-                                  playlist_id,
-                                  header
-                                )
-                                .then(response => {
-                                  console.log("playlist created", response);
-                                  setPlaylistCreated(true);
-                                });
-                            });
-                        });
-                    });
-                });
-            });
-        });
-    });
-  };
+    discoveryService.createPlaylistWithSimilarSongs(id, songID, header, setPlaylistCreated)
+  }
 
   const listOfPlaylists = userPlaylists.map(info => (
     <MusicItem
@@ -428,7 +253,6 @@ const App = () => {
           </IconButton>
           <UserInfo
             header={header}
-            setUserData={setUserData}
             setUserPlaylists={setUserPlaylists}
           ></UserInfo>
           <MusicContainer musicItems={listOfPlaylists} />
