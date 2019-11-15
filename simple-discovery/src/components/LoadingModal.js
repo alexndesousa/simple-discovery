@@ -36,8 +36,6 @@ const LoadingModal = ({ open, handleClose, isPlaylistCreated }) => {
           </div>
         ) : (
           <div className={classes.paper}>
-
-
             <h2 id="simple-modal-title">Generating playlist</h2>
             <div align="center">
               <CircularProgress />
