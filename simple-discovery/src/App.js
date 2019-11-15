@@ -1,16 +1,10 @@
 import React, { useState, useEffect } from "react";
-import UserInfo from "./components/UserInfo";
 import discoveryService from "./services/discoveryService";
 import MusicItem from "./components/MusicItem";
-import MusicContainer from "./components/MusicContainer";
 import SearchContainer from "./components/SearchContainer";
-import { generateRandomString } from "./utils/utils";
-
-import { makeStyles } from "@material-ui/core/styles";
+import { authenticateUser, getAuthorizationHeader } from "./services/authService"
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
-import IconButton from "@material-ui/core/IconButton";
-import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 
 //hash parameters will get the parameters in the url
 //need to figureo ut how to get them after a redirect
@@ -63,59 +57,11 @@ const App = () => {
     setSongPageVisibility(!isSongPageVisible);
   };
 
-  //redirects the user to spotify so they can authenticate themselves.
-  //they are then sent back to the redirect uri (in this case localhost)
-  const authenticateUser = () => {
-    const client_id = "a4e259d0257745afb6d9bc995d65808d";
-    const redirect_uri = "http://localhost:3000/";
-    const scope =
-      "user-top-read user-read-private user-read-email playlist-modify-public playlist-read-private";
-
-    //whenever I make an api call, ensure that the state is the same as this one
-    const state = generateRandomString(16);
-    const url =
-      "https://accounts.spotify.com/authorize?response_type=token" +
-      "&client_id=" +
-      encodeURIComponent(client_id) +
-      "&scope=" +
-      encodeURIComponent(scope) +
-      "&redirect_uri=" +
-      encodeURIComponent(redirect_uri) +
-      "&state=" +
-      encodeURIComponent(state);
-    setState(state);
-    setLoginVisible(false);
-    window.location = url;
-  };
-
-  //I should merge the next two functions into one, it seems unecessary that I have to press
-  //the get data button, it should just work once the user is authenticated
-
-  //grabs the url parameters and puts them into an object (then returns it)
-  const decodeURLParameters = () => {
-    const queryString = window.location.hash.substring(1);
-    let query = {};
-    let pairs = queryString.split("&");
-    for (let i = 0; i < pairs.length; i++) {
-      let pair = pairs[i].split("=");
-      query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
-    }
-    return query;
-  };
-  //returns an object with all the information that i need from the url
-  const getAuthorizationHeader = () => {
-    const authInfo = decodeURLParameters();
-    const newHeader = {
-      Authorization: " " + authInfo.token_type + " " + authInfo.access_token
-    };
-    setHeader(newHeader);
-  };
-
   //i also wanna check the url here. If it contains the access_token, get rid of the authenticate
   //this can be done with the same method from earlier where it just extracted the token from the url params
   useEffect(() => {
     console.log("hello from the useEffect thingy mabob");
-    getAuthorizationHeader();
+    getAuthorizationHeader(setHeader);
     //something like below could work, but it isnt exactly the most optimal way of doing it.
     //what happens if a user puts something after the forward slash, theres no way for them
     //to know what went wrong
@@ -150,6 +96,7 @@ const App = () => {
       name={info.name}
       functionToExecute={createPlaylistFromPlaylist_Artist}
       isPlaylistCreated={playlistCreated}
+      setPlaylistCreated={setPlaylistCreated}
     />
   ))
 
@@ -161,6 +108,7 @@ const App = () => {
       name={info.name}
       functionToExecute={createPlaylistWithSimilarArtists}
       isPlaylistCreated={playlistCreated}
+      setPlaylistCreated={setPlaylistCreated}
     />
   ));
 
@@ -172,6 +120,7 @@ const App = () => {
       name={`${info.name} - ${info.artist}`}
       functionToExecute={createPlaylistWithSimilarSongs}
       isPlaylistCreated={playlistCreated}
+      setPlaylistCreated={setPlaylistCreated}
     />
   ));
 
@@ -284,7 +233,6 @@ const App = () => {
       {isLoginVisible ? (
         <button onClick={() => authenticateUser()}>authenticate</button>
       ) : null}
-      {/* {isLoginVisible ? <button onClick={() => toggleMainMenu()} >authenticate</button> : null} */}
 
       {MainMenu}
       {PlaylistPage}
