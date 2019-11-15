@@ -126,23 +126,6 @@ const App = () => {
     // }
   }, []);
 
-  const useStyles = makeStyles({
-    root: {
-      flexgrow: 1
-    },
-    card: {
-      maxWidth: 345
-    },
-    media: {
-      height: 140
-    },
-    back_button: {
-      left: "10%"
-    }
-  });
-
-  const classes = useStyles();
-
   const createPlaylistFromPlaylist_Artist = id => {
     discoveryService.createPlaylistFromPlaylist_ArtistBased(id, header, setPlaylistCreated)
   }
