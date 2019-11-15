@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
 import CardActionArea from "@material-ui/core/CardActionArea";
@@ -19,7 +19,7 @@ const useStyles = makeStyles({
 
 const MusicItem = ({ id, image, name, functionToExecute, isPlaylistCreated }) => {
   const classes = useStyles();
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleOpen = () => {
     setOpen(true)
@@ -31,8 +31,9 @@ const MusicItem = ({ id, image, name, functionToExecute, isPlaylistCreated }) =>
 
   return (
     <Grid item align="center">
+      <LoadingModal open={open} handleClose={handleClose} isPlaylistCreated={isPlaylistCreated} />
       <Card className={classes.card} onClick={() => {functionToExecute(...id); handleOpen()}}>
-        <LoadingModal open={open} handleClose={handleClose} isPlaylistCreated={isPlaylistCreated} />
+        
         <CardActionArea>
           <CardMedia className={classes.media} image={image} title={name} />
           <CardContent>
