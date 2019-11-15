@@ -1,6 +1,7 @@
 import axios from "axios";
 import { chunkArray } from "../utils/utils";
 import placeholderImage from "../assets/placeholder.png";
+import { authenticateUser } from "./authService"
 
 const baseUrl = "https://api.spotify.com/v1";
 
@@ -39,7 +40,7 @@ axios.interceptors.response.use(
         originalRequest
       );
     } else if (status === 401) {
-      ///handle reauthentication
+      authenticateUser()
       return Promise.reject(error);
     } else {
       return Promise.reject(error)
