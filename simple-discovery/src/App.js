@@ -2,12 +2,10 @@ import React, { useState, useEffect } from "react";
 import discoveryService from "./services/discoveryService";
 import MusicItem from "./components/MusicItem";
 import SearchContainer from "./components/SearchContainer";
+import AuthModal from "./components/AuthModal"
 import { authenticateUser, getAuthorizationHeader } from "./services/authService"
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
-
-//hash parameters will get the parameters in the url
-//need to figureo ut how to get them after a redirect
 
 const App = () => {
   const [newPlaylistSearch, setNewPlaylistSearch] = useState("")
@@ -21,13 +19,12 @@ const App = () => {
   const [playlistCreated, setPlaylistCreated] = useState(false);
 
   const [header, setHeader] = useState(null);
-  const [state, setState] = useState("");
 
-  const [isLoginVisible, setLoginVisible] = useState(true);
   const [isMainMenuVisible, setMainMenuVisibility] = useState(true);
   const [isArtistPageVisible, setArtistPageVisibility] = useState(false);
   const [isSongPageVisible, setSongPageVisibility] = useState(false);
   const [isPlaylistPageVisible, setPlaylistPageVisibility] = useState(false);
+  const [isAuthModalVisible, setAuthOpenVisibility] = useState(true);
 
   const handlePlaylistSearch = event => {
     setNewPlaylistSearch(event.target.value)
@@ -57,26 +54,20 @@ const App = () => {
     setSongPageVisibility(!isSongPageVisible);
   };
 
-  //i also wanna check the url here. If it contains the access_token, get rid of the authenticate
-  //this can be done with the same method from earlier where it just extracted the token from the url params
-  useEffect(() => {
-    console.log("hello from the useEffect thingy mabob");
-    getAuthorizationHeader(setHeader);
-    //something like below could work, but it isnt exactly the most optimal way of doing it.
-    //what happens if a user puts something after the forward slash, theres no way for them
-    //to know what went wrong
+  const handleAuthClose = () => {
+    setAuthOpenVisibility(false)
+  }
 
-    // if(window.location !== "http://localhost:3000") {
-    //     console.log('window location', window.location)
-    //     setLoginVisible(false)
-    // }
+  useEffect(() => {
+    getAuthorizationHeader(setHeader);
+    if(window.location.href !== "https://alexndesousa.github.io/simple-discovery/") {
+        handleAuthClose()
+    }
   }, []);
 
   const createPlaylistFromPlaylist_Artist = id => {
     discoveryService.createPlaylistFromPlaylist_ArtistBased(id, header, setPlaylistCreated)
   }
-
-  //NEED TO PRESENT THE USER WITH A BUTTON LINKING TO THEIR NEWLY CREATED PLAYLIST
 
   const createPlaylistWithSimilarArtists = id => {
     discoveryService.createPlaylistWithSimilarArtists(id, header, setPlaylistCreated)
@@ -230,9 +221,10 @@ const App = () => {
 
   return (
     <div>
-      {isLoginVisible ? (
+      <AuthModal open={isAuthModalVisible} handleClose={handleAuthClose} authFunction={authenticateUser}/>
+      {/* {isLoginVisible ? (
         <button onClick={() => authenticateUser()}>authenticate</button>
-      ) : null}
+      ) : null} */}
 
       {MainMenu}
       {PlaylistPage}
