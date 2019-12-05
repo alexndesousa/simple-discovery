@@ -5,8 +5,6 @@ const authenticateUser = () => {
     const redirect_uri = "https://alexndesousa.github.io/simple-discovery/";
     const scope =
       "user-top-read user-read-private user-read-email playlist-modify-public playlist-read-private";
-
-    //whenever I make an api call, ensure that the state is the same as this one
     const state = generateRandomString(16);
     const url =
       "https://accounts.spotify.com/authorize?response_type=token" +
@@ -18,8 +16,6 @@ const authenticateUser = () => {
       encodeURIComponent(redirect_uri) +
       "&state=" +
       encodeURIComponent(state);
-    // setState(state);
-    // setLoginVisible(false);
     window.location = url;
   };
 
